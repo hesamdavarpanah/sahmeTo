@@ -1,0 +1,66 @@
+services:
+  sahmeto-database:
+    container_name: "sahmeto-database"
+    image: "postgres:latest"
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=sahmeto_admin
+      - POSTGRES_PASSWORD=SecurePas$1
+      - SECOND_DB_NAME=sahmeto_db
+    volumes:
+      - ./create_second_db.sh:/docker-entrypoint-initdb.d/create_second_db.sh
+    networks:
+      - backend
+    restart: "on-failure"
+
+  sahmeto-redis:
+    container_name: "sahmeto-redis"
+    image: redis:latest
+    privileged: true
+    environment:
+      - REDIS_PASSWORD=)9Z|@W8T2(Vl
+    command:
+      - /bin/sh
+      - -c
+      - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
+    ports:
+      - "6379:6379"
+    expose:
+      - 6379
+    restart: "on-failure"
+    networks:
+      - backend
+
+  sahmeto-service:
+    container_name: "sahmeto-service"
+    image: "sahmeto-service-image:1.0"
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_ADDRESS=127.0.0.1
+      - SERVER_PORT=8080
+      - APPLICATION_NAME=sahmeTo
+      - DATABASE_DRIVER=jdbc
+      - DATABASE_SCHEME=postgresql
+      - DATABASE_HOST=sahmeto-database
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=sahmeto_db
+      - DATABASE_USER=sahmeto_admin
+      - DATABASE_PASSWORD=SecurePas$1
+      - REDIS_HOST=sahmeto-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=)9Z|@W8T2(Vl
+      - REDIS_DB_NUMBER=1
+      - JWT_SECRET_KEY=MUUnaTBMMEc0UVxwQC9bNHtkU008O2Zx
+      - JWT_EXPIRE_TIME=86400000
+      - LIMIT_RATE=10
+      - LIMIT_REFRESH_PER_SECOND=60
+      - LIMIT_TIMEOUT_PER_SECOND=1800
+    networks:
+      - backend
+    restart: "on-failure"
+networks:
+  backend:
